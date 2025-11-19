@@ -1,0 +1,187 @@
+<mujoco model="b2 bridge and hurdles terrain">
+  <include file="b2.xml"/>
+
+  <statistic center="0 0 0.3" extent="8"/>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="-130" elevation="-20"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
+      markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="10 10" reflectance="0.2"/>
+    <material name="bridge" rgba="0.6 0.4 0.2 1"/>
+    <material name="hurdle" rgba="0.8 0.2 0.2 1"/>
+    <material name="platform" rgba="0.5 0.5 0.5 1"/>
+  </asset>
+
+  <worldbody>
+    <light pos="3 0 3" dir="0 0 -1" directional="true"/>
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+
+    <!-- ========== LEFT LANE: SUSPENSION BRIDGE ========== -->
+
+    <!-- Starting Ramp - Left Lane (corrected slope direction) -->
+    <geom name="ramp_start" type="box" size="0.5598 1.0 0.02" pos="1.5598 0.0 0.15" quat="0.9914449 0 -0.1305262 0" material="bridge"/>
+    
+    <!-- Starting Platform of Bridge -->
+    <geom name="bridge_platform_1" type="box" size="0.75 1.0 0.15" pos="2.8696 0.0 0.15" material="platform"/>
+
+    <!-- Sensor poles at end of Section 0 -->
+    <geom name="pole_left_0" type="cylinder" size="0.025 0.75" pos="3.6196 -1.0 1.05" material="hurdle"/>
+    <geom name="pole_right_0" type="cylinder" size="0.025 0.75" pos="3.6196 1.0 1.05" material="hurdle"/>
+    
+    <!-- Bridge Section 1: Multiple planks with gaps (3.05m long with 0.05m gaps) -->
+    <!-- Section 1 starts at x=3.6196 (platform_1 ends at 3.6196) -->
+    <geom name="plank_1_1" type="box" size="0.125 1.0 0.0225" pos="3.7946 0.0 0.2775" material="bridge"/>
+    <geom name="plank_1_2" type="box" size="0.125 1.0 0.0225" pos="4.0946 0.0 0.2775" material="bridge"/>
+    <geom name="plank_1_3" type="box" size="0.125 1.0 0.0225" pos="4.3946 0.0 0.2775" material="bridge"/>
+    <geom name="plank_1_4" type="box" size="0.125 1.0 0.0225" pos="4.6946 0.0 0.2775" material="bridge"/>
+    <geom name="plank_1_5" type="box" size="0.125 1.0 0.0225" pos="4.9946 0.0 0.2775" material="bridge"/>
+    <geom name="plank_1_6" type="box" size="0.125 1.0 0.0225" pos="5.2946 0.0 0.2775" material="bridge"/>
+    <geom name="plank_1_7" type="box" size="0.125 1.0 0.0225" pos="5.5946 0.0 0.2775" material="bridge"/>
+    <geom name="plank_1_8" type="box" size="0.125 1.0 0.0225" pos="5.8946 0.0 0.2775" material="bridge"/>
+    <geom name="plank_1_9" type="box" size="0.125 1.0 0.0225" pos="6.1946 0.0 0.2775" material="bridge"/>
+    <geom name="plank_1_10" type="box" size="0.125 1.0 0.0225" pos="6.4946 0.0 0.2775" material="bridge"/>
+    <!-- Section 1 ends at x=6.6696 -->
+    
+    <!-- Support beams for Section 1 (left and right) -->
+    <geom name="beam_left_1" type="box" size="1.525 0.05 0.025" pos="5.1446 -0.95 0.2025" material="bridge"/>
+    <geom name="beam_right_1" type="box" size="1.525 0.05 0.025" pos="5.1446 0.95 0.2025" material="bridge"/>
+    
+    <!-- Connectors -->
+    <geom name="connector_left_1" type="box" size="1.525 0.025 0.05" pos="5.1446 -0.975 0.25" material="bridge"/>
+    <geom name="connector_right_1" type="box" size="1.525 0.025 0.05" pos="5.1446 0.975 0.25" material="bridge"/>
+    
+    <!-- Sensor poles at end of Section 1 -->
+    <geom name="pole_left_1" type="cylinder" size="0.025 0.75" pos="6.6696 -1.0 1.05" material="hurdle"/>
+    <geom name="pole_right_1" type="cylinder" size="0.025 0.75" pos="6.6696 1.0 1.05" material="hurdle"/>
+    
+    <!-- Middle Platform (starts at 6.6696, center at 7.4196) -->
+    <geom name="bridge_platform_2" type="box" size="0.75 1.0 0.15" pos="7.4196 0.0 0.15" material="platform"/>
+    
+    <!-- Bridge Section 2: Planks with larger gaps (4.15m long with 0.15m gaps) -->
+    <!-- Section 2 starts at x=8.1696 (platform_2 ends at 8.1696) -->
+    <geom name="plank_2_1" type="box" size="0.125 1.0 0.0225" pos="8.4446 0.0 0.2775" material="bridge"/>
+    <geom name="plank_2_2" type="box" size="0.125 1.0 0.0225" pos="8.8446 0.0 0.2775" material="bridge"/>
+    <geom name="plank_2_3" type="box" size="0.125 1.0 0.0225" pos="9.2446 0.0 0.2775" material="bridge"/>
+    <geom name="plank_2_4" type="box" size="0.125 1.0 0.0225" pos="9.6446 0.0 0.2775" material="bridge"/>
+    <geom name="plank_2_5" type="box" size="0.125 1.0 0.0225" pos="10.0446 0.0 0.2775" material="bridge"/>
+    <geom name="plank_2_6" type="box" size="0.125 1.0 0.0225" pos="10.4446 0.0 0.2775" material="bridge"/>
+    <geom name="plank_2_7" type="box" size="0.125 1.0 0.0225" pos="10.8446 0.0 0.2775" material="bridge"/>
+    <geom name="plank_2_8" type="box" size="0.125 1.0 0.0225" pos="11.2446 0.0 0.2775" material="bridge"/>
+    <geom name="plank_2_9" type="box" size="0.125 1.0 0.0225" pos="11.6446 0.0 0.2775" material="bridge"/>
+    <geom name="plank_2_10" type="box" size="0.125 1.0 0.0225" pos="12.0446 0.0 0.2775" material="bridge"/>
+    <!-- Section 2 ends at x=12.3196 -->
+    
+    <!-- Support beams for Section 2 -->
+    <geom name="beam_left_2" type="box" size="2.075 0.05 0.025" pos="10.2446 -0.95 0.2025" material="bridge"/>
+    <geom name="beam_right_2" type="box" size="2.075 0.05 0.025" pos="10.2446 0.95 0.2025" material="bridge"/>
+    
+    <!-- Connectors Section 2 -->
+    <geom name="connector_left_2" type="box" size="2.075 0.025 0.05" pos="10.2446 -0.975 0.25" material="bridge"/>
+    <geom name="connector_right_2" type="box" size="2.075 0.025 0.05" pos="10.2446 0.975 0.25" material="bridge"/>
+    
+    <!-- Sensor poles at end of Section 2 -->
+    <geom name="pole_left_2" type="cylinder" size="0.025 0.75" pos="12.3196 -1.0 1.05" material="hurdle"/>
+    <geom name="pole_right_2" type="cylinder" size="0.025 0.75" pos="12.3196 1.0 1.05" material="hurdle"/>
+    
+    <!-- End Platform of Bridge (starts at 12.3196, center at 13.0696) -->
+    <geom name="bridge_platform_3" type="box" size="0.75 1.0 0.15" pos="13.0696 0.0 0.15" material="platform"/>
+    
+    <!-- Bridge Section 3: With one large 0.5m gap -->
+    <!-- Section 3 starts at x=13.8196 (platform_3 ends at 13.8196), total length 1.75m -->
+    <geom name="plank_3_1" type="box" size="0.125 1.0 0.0225" pos="13.9446 0.0 0.2775" material="bridge"/>
+    <geom name="plank_3_2" type="box" size="0.125 1.0 0.0225" pos="14.1946 0.0 0.2775" material="bridge"/>
+    <geom name="plank_3_3" type="box" size="0.125 1.0 0.0225" pos="14.4446 0.0 0.2775" material="bridge"/>
+    <geom name="plank_3_4" type="box" size="0.125 1.0 0.0225" pos="14.6946 0.0 0.2775" material="bridge"/>
+    <!-- Large gap here (0.5m) from 14.8196 to 15.3196 -->
+    <geom name="plank_3_5" type="box" size="0.125 1.0 0.0225" pos="15.4446 0.0 0.2775" material="bridge"/>
+    <!-- Section 3 ends at x=15.5696 -->
+    
+    <!-- Support beams for Section 3 -->
+    <geom name="beam_left_3" type="box" size="0.875 0.05 0.025" pos="14.6946 -0.95 0.2025" material="bridge"/>
+    <geom name="beam_right_3" type="box" size="0.875 0.05 0.025" pos="14.6946 0.95 0.2025" material="bridge"/>
+    
+    <!-- Connectors Section 3 -->
+    <geom name="connector_left_3" type="box" size="0.875 0.025 0.05" pos="14.6946 -0.975 0.25" material="bridge"/>
+    <geom name="connector_right_3" type="box" size="0.875 0.025 0.05" pos="14.6946 0.975 0.25" material="bridge"/>
+    
+    <!-- Sensor poles at end of Section 3 -->
+    <geom name="pole_left_3" type="cylinder" size="0.025 0.75" pos="15.5696 -1.0 1.05" material="hurdle"/>
+    <geom name="pole_right_3" type="cylinder" size="0.025 0.75" pos="15.5696 1.0 1.05" material="hurdle"/>
+    
+    <!-- Final Platform (starts at 15.5696, center at 16.3196) -->
+    <geom name="bridge_platform_4" type="box" size="0.75 1.0 0.15" pos="16.3196 0.0 0.15" material="platform"/>
+    
+    <!-- End Ramp (corrected slope direction, starts at 17.0696, center at 17.6294) -->
+    <geom name="ramp_end" type="box" size="0.5598 1.0 0.02" pos="17.6294 0.0 0.15" quat="0.9914449 0 0.1305262 0" material="bridge"/>
+    
+    <!-- Cushion pads on both sides (safety nets) - cover the 3 bridge sections -->
+    <geom name="cushion_left" type="box" size="5.975 1.0 0.05" pos="9.6 -2.0 0.025" rgba="0.3 0.3 0.8 0.5"/>
+    <geom name="cushion_right" type="box" size="5.975 1.0 0.05" pos="9.6 2.0 0.025" rgba="0.3 0.3 0.8 0.5"/>
+    
+    <!-- ========== RIGHT LANE: HURDLES SECTION ========== -->
+
+    <!-- Hurdle 1: Low height (0.15m crossbar) -->
+    <geom name="h1_base_bar" type="box" size="0.015 0.5 0.015" pos="2.0 -5.0 0.015" material="hurdle"/>
+    <geom name="h1_left_base" type="box" size="0.5 0.03 0.02" pos="1.53 -5.503 0.02" material="hurdle"/>
+    <geom name="h1_right_base" type="box" size="0.5 0.03 0.02" pos="1.53 -4.497 0.02" material="hurdle"/>
+    <geom name="h1_left_post" type="box" size="0.015 0.015 0.0675" pos="2.0 -5.503 0.0675" material="hurdle"/>
+    <geom name="h1_right_post" type="box" size="0.015 0.015 0.0675" pos="2.0 -4.497 0.0675" material="hurdle"/>
+    <geom name="h1_crossbar" type="box" size="0.035 0.6 0.035" pos="2.0 -5.0 0.15" material="hurdle"/>
+    
+    <!-- Hurdle 2: Medium height (0.25m crossbar) -->
+    <geom name="h2_base_bar" type="box" size="0.015 0.5 0.015" pos="3.5 -5.0 0.015" material="hurdle"/>
+    <geom name="h2_left_base" type="box" size="0.5 0.03 0.02" pos="3.03 -5.503 0.02" material="hurdle"/>
+    <geom name="h2_right_base" type="box" size="0.5 0.03 0.02" pos="3.03 -4.497 0.02" material="hurdle"/>
+    <geom name="h2_left_post" type="box" size="0.015 0.015 0.1175" pos="3.5 -5.503 0.1175" material="hurdle"/>
+    <geom name="h2_right_post" type="box" size="0.015 0.015 0.1175" pos="3.5 -4.497 0.1175" material="hurdle"/>
+    <geom name="h2_crossbar" type="box" size="0.035 0.6 0.035" pos="3.5 -5.0 0.25" material="hurdle"/>
+    
+    <!-- Hurdle 3: High height (0.35m crossbar) -->
+    <geom name="h3_base_bar" type="box" size="0.015 0.5 0.015" pos="5.0 -5.0 0.015" material="hurdle"/>
+    <geom name="h3_left_base" type="box" size="0.5 0.03 0.02" pos="4.53 -5.503 0.02" material="hurdle"/>
+    <geom name="h3_right_base" type="box" size="0.5 0.03 0.02" pos="4.53 -4.497 0.02" material="hurdle"/>
+    <geom name="h3_left_post" type="box" size="0.015 0.015 0.1675" pos="5.0 -5.503 0.1675" material="hurdle"/>
+    <geom name="h3_right_post" type="box" size="0.015 0.015 0.1675" pos="5.0 -4.497 0.1675" material="hurdle"/>
+    <geom name="h3_crossbar" type="box" size="0.035 0.6 0.035" pos="5.0 -5.0 0.35" material="hurdle"/>
+    
+    <!-- Hurdle 4: Medium-high height (0.30m crossbar) -->
+    <geom name="h4_base_bar" type="box" size="0.015 0.5 0.015" pos="6.5 -5.0 0.015" material="hurdle"/>
+    <geom name="h4_left_base" type="box" size="0.5 0.03 0.02" pos="6.03 -5.503 0.02" material="hurdle"/>
+    <geom name="h4_right_base" type="box" size="0.5 0.03 0.02" pos="6.03 -4.497 0.02" material="hurdle"/>
+    <geom name="h4_left_post" type="box" size="0.015 0.015 0.1425" pos="6.5 -5.503 0.1425" material="hurdle"/>
+    <geom name="h4_right_post" type="box" size="0.015 0.015 0.1425" pos="6.5 -4.497 0.1425" material="hurdle"/>
+    <geom name="h4_crossbar" type="box" size="0.035 0.6 0.035" pos="6.5 -5.0 0.30" material="hurdle"/>
+    
+    <!-- Hurdle 5: Very high (0.40m crossbar) -->
+    <geom name="h5_base_bar" type="box" size="0.015 0.5 0.015" pos="8.0 -5.0 0.015" material="hurdle"/>
+    <geom name="h5_left_base" type="box" size="0.5 0.03 0.02" pos="7.53 -5.503 0.02" material="hurdle"/>
+    <geom name="h5_right_base" type="box" size="0.5 0.03 0.02" pos="7.53 -4.497 0.02" material="hurdle"/>
+    <geom name="h5_left_post" type="box" size="0.015 0.015 0.1925" pos="8.0 -5.503 0.1925" material="hurdle"/>
+    <geom name="h5_right_post" type="box" size="0.015 0.015 0.1925" pos="8.0 -4.497 0.1925" material="hurdle"/>
+    <geom name="h5_crossbar" type="box" size="0.035 0.6 0.035" pos="8.0 -5.0 0.40" material="hurdle"/>
+    
+    <!-- Hurdle 6: Extra high (0.50m crossbar) -->
+    <geom name="h6_base_bar" type="box" size="0.015 0.5 0.015" pos="9.5 -5.0 0.015" material="hurdle"/>
+    <geom name="h6_left_base" type="box" size="0.5 0.03 0.02" pos="9.03 -5.503 0.02" material="hurdle"/>
+    <geom name="h6_right_base" type="box" size="0.5 0.03 0.02" pos="9.03 -4.497 0.02" material="hurdle"/>
+    <geom name="h6_left_post" type="box" size="0.015 0.015 0.2425" pos="9.5 -5.503 0.2425" material="hurdle"/>
+    <geom name="h6_right_post" type="box" size="0.015 0.015 0.2425" pos="9.5 -4.497 0.2425" material="hurdle"/>
+    <geom name="h6_crossbar" type="box" size="0.035 0.6 0.035" pos="9.5 -5.0 0.50" material="hurdle"/>
+    
+    <!-- Hurdle 7: Maximum height (0.60m crossbar) -->
+    <geom name="h7_base_bar" type="box" size="0.015 0.5 0.015" pos="11.0 -5.0 0.015" material="hurdle"/>
+    <geom name="h7_left_base" type="box" size="0.5 0.03 0.02" pos="10.53 -5.503 0.02" material="hurdle"/>
+    <geom name="h7_right_base" type="box" size="0.5 0.03 0.02" pos="10.53 -4.497 0.02" material="hurdle"/>
+    <geom name="h7_left_post" type="box" size="0.015 0.015 0.2925" pos="11.0 -5.503 0.2925" material="hurdle"/>
+    <geom name="h7_right_post" type="box" size="0.015 0.015 0.2925" pos="11.0 -4.497 0.2925" material="hurdle"/>
+    <geom name="h7_crossbar" type="box" size="0.035 0.6 0.035" pos="11.0 -5.0 0.60" material="hurdle"/>
+
+  </worldbody>
+</mujoco>

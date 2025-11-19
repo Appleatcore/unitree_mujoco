@@ -15,7 +15,7 @@ enable_elastic_band: 0 # Virtual spring band, used for lifting h1
 
 # ROS2 Publishers (optional)
 enable_ray_array: true  # Enable ray array publisher
-#enable_odom: true      # Enable odometry publisher
+enable_odom: true      # Enable odometry publisher
 #enable_gridmap: true   # Enable grid map publisher
 
 ## Raycaster output format (default for all sensors)
@@ -35,6 +35,7 @@ raycaster_sensors:
     flatten_xyz: false
     zero_mean: false         # Keep absolute depth values
     replace_nan: "zero"       # Replace NaN/Inf with max_distance
+    use_euclidean_distance: false
 
 # Depth Image Visualizer (optional, impacts performance)
 enable_depth_visualizer: true  # Enable depth camera visualization (default: false)

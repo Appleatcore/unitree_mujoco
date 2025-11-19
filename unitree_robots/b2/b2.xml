@@ -254,12 +254,14 @@
 <!--      <config key="draw_deep" value="2 5 0 1 0" />-->
       <config key="draw_hip_point" value="1 0.02" />
 
-      <config key="sensor_data_types" value="data image" />
+      <config key="sensor_data_types" value="pos_b image" />
       <config key="noise_type" value="uniform" />
       <config key="noise_cfg" value="-0.1 0.1 1" />
 
       <config key="geomgroup" value="1 0 0 0 0 0" />
     </plugin>
+    <framepos name="depth_camera_pos" objtype="camera" objname="ray_caster_camera"/>
+    <framequat name="depth_camera_quat" objtype="camera" objname="ray_caster_camera"/>
 
     <plugin name="height_scan" plugin="mujoco.sensor.ray_caster"
             objtype="camera" objname="ray_caster">

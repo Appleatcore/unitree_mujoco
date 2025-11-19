@@ -119,6 +119,7 @@ namespace
   std::shared_ptr<GridMapPublisher> gridmap_publisher = nullptr;
   std::shared_ptr<OdomPublisher> odom_publisher = nullptr;
   rclcpp::Node::SharedPtr raycaster_node = nullptr;
+  rclcpp::Node::SharedPtr odom_node = nullptr;
 #endif
 
   // Depth image visualizer
@@ -572,9 +573,12 @@ namespace
                   }
                   last_publisher_time = d->time;
                 }
-                // Spin ROS2 node
+                // Spin ROS2 nodes
                 if (raycaster_node) {
                   rclcpp::spin_some(raycaster_node);
+                }
+                if (odom_node) {
+                  rclcpp::spin_some(odom_node);
                 }
 #endif
                 // Update depth image visualizer (with frequency control)
@@ -639,7 +643,7 @@ void PhysicsThread(mj::Simulate *sim, const char *filename)
         raycaster_publisher->initialize(m, d);
       }
       // Initialize odometry publisher
-      if (raycaster_node && odom_publisher) {
+      if (odom_node && odom_publisher) {
         odom_publisher->initialize(m, d);
       }
 #endif
@@ -666,7 +670,7 @@ void PhysicsThread(mj::Simulate *sim, const char *filename)
 
 #ifdef ENABLE_ROS2
   // Shutdown ROS2
-  if (raycaster_node) {
+  if (raycaster_node || odom_node) {
     rclcpp::shutdown();
   }
 #endif
@@ -806,25 +810,22 @@ int main(int argc, char **argv)
 
   // Initialize GridMap publisher if enabled in config
   if (param::config.enable_gridmap) {
-    raycaster_node->declare_parameter("gridmap.enabled", true);
     gridmap_publisher = std::make_shared<GridMapPublisher>(raycaster_node, "/height_scan", "/elevation_map");
     if (gridmap_publisher->isEnabled()) {
       std::printf("ROS2 gridmap publisher initialized\n");
     }
   } else {
-    raycaster_node->declare_parameter("gridmap.enabled", false);
     std::printf("ROS2 gridmap publisher disabled (set enable_gridmap: true in config.yaml to enable)\n");
   }
   
-  // Initialize Odometry publisher if enabled in config
+  // Initialize Odometry publisher with its own node
   if (param::config.enable_odom) {
-    raycaster_node->declare_parameter("odom.enabled", true);
-    odom_publisher = std::make_shared<OdomPublisher>(raycaster_node, "base", "/odom");
+    odom_node = std::make_shared<rclcpp::Node>("odom_publisher");
+    odom_publisher = std::make_shared<OdomPublisher>(odom_node, "base", "/odom");
     if (odom_publisher->isEnabled()) {
       std::printf("ROS2 odometry publisher initialized\n");
     }
   } else {
-    raycaster_node->declare_parameter("odom.enabled", false);
     std::printf("ROS2 odometry publisher disabled (set enable_odom: true in config.yaml to enable)\n");
   }
 #endif

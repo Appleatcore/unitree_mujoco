@@ -18,6 +18,7 @@
 #include <map>
 #include <sstream>
 #include <algorithm>
+#include <cmath>
 
 class RaycasterPublisher {
 public:
@@ -66,6 +67,23 @@ public:
                 sensor.data_adr = m->sensor_adr[i];
                 sensor.plugin_id = plugin_id;
                 sensor.state_adr = m->plugin_stateadr[plugin_id];
+                
+                // Get the object name that this sensor is attached to
+                // This is used to find corresponding pos/quat sensors
+                int objtype = m->sensor_type[i];
+                int objid = m->sensor_objid[i];
+                const char* obj_name = nullptr;
+                if (objtype == mjOBJ_CAMERA && objid >= 0) {
+                    obj_name = mj_id2name(m, mjOBJ_CAMERA, objid);
+                } else if (objtype == mjOBJ_SITE && objid >= 0) {
+                    obj_name = mj_id2name(m, mjOBJ_SITE, objid);
+                }
+                if (obj_name) {
+                    sensor.attached_obj_name = std::string(obj_name);
+                }
+                
+                // Determine frame_id based on data type
+                // Will be updated after reading sensor_data_types config
                 sensor.frame_id = "world";
                 
                 // Read sensor_data_types configuration from plugin
@@ -108,11 +126,13 @@ public:
                     bool found_data = false;
                     
                     // Look for "data" type first (preferred for publishing)
+                    std::string selected_data_type;
                     for (size_t j = 0; j < sensor_data_types.size() && j < data_configs.size(); j++) {
                         if (sensor_data_types[j].find("data") != std::string::npos) {
                             sensor.pos_w_data_offset = data_configs[j].first;
                             sensor.pos_w_data_size = data_configs[j].second;
                             sensor.data_type = get_data_type_from_string(sensor_data_types[j]);
+                            selected_data_type = sensor_data_types[j];
                             found_data = true;
                             RCLCPP_INFO(node_->get_logger(), 
                                 "  Using '%s' type (config index %zu, offset=%d, size=%d)",
@@ -130,6 +150,7 @@ public:
                                 sensor.pos_w_data_offset = data_configs[j].first;
                                 sensor.pos_w_data_size = data_configs[j].second;
                                 sensor.data_type = get_data_type_from_string(sensor_data_types[j]);
+                                selected_data_type = sensor_data_types[j];
                                 found_data = true;
                                 RCLCPP_INFO(node_->get_logger(), 
                                     "  Using '%s' type (config index %zu, offset=%d, size=%d)",
@@ -140,16 +161,30 @@ public:
                         }
                     }
                     
+                    // Update frame_id based on data type
+                    // pos_b: data in body/sensor frame, pos_w: data in world frame
+                    if (selected_data_type.find("pos_b") != std::string::npos) {
+                        sensor.frame_id = sensor_name;  // Use sensor name as frame
+                    } else {
+                        sensor.frame_id = "world";  // pos_w or other data types use world frame
+                    }
+                    
                     // If still not found, use first available type
                     if (!found_data && !sensor_data_types.empty() && !data_configs.empty()) {
                         sensor.pos_w_data_offset = data_configs[0].first;
                         sensor.pos_w_data_size = data_configs[0].second;
                         sensor.data_type = get_data_type_from_string(sensor_data_types[0]);
+                        selected_data_type = sensor_data_types[0];
                         found_data = true;
                         RCLCPP_INFO(node_->get_logger(), 
                             "  Using '%s' type (first available, offset=%d, size=%d)",
                             sensor_data_types[0].c_str(),
                             sensor.pos_w_data_offset, sensor.pos_w_data_size);
+                        
+                        // Update frame_id based on data type
+                        if (selected_data_type.find("pos_b") != std::string::npos) {
+                            sensor.frame_id = sensor_name;
+                        }
                     }
                     
                     if (!found_data) {
@@ -170,6 +205,7 @@ public:
                 bool zero_mean = param::config.raycaster_zero_mean;
                 float offset = 0.0f;
                 std::string replace_nan = "";
+                bool use_euclidean_distance = true;  // Default to euclidean distance
                 
                 // Check if sensor has specific configuration
                 auto it = param::config.raycaster_sensors.find(sensor_name);
@@ -181,6 +217,7 @@ public:
                     zero_mean = it->second.zero_mean;
                     offset = it->second.offset;
                     replace_nan = it->second.replace_nan;
+                    use_euclidean_distance = it->second.use_euclidean_distance;
                     // Note: max_distance from param config is ignored, we use MuJoCo's dis_range instead
                 }
                 
@@ -194,6 +231,7 @@ public:
                 sensor.offset = offset;
                 sensor.replace_nan = replace_nan;
                 sensor.max_distance = max_distance;  // From MuJoCo dis_range config
+                sensor.use_euclidean_distance = use_euclidean_distance;
                 
                 if (sensor_format == OutputFormat::POINTCLOUD) {
                     sensor.pc_publisher = node_->create_publisher<sensor_msgs::msg::PointCloud2>(
@@ -201,7 +239,7 @@ public:
                     
                     // Pre-allocate message template to avoid repeated allocation
                     int num_points = sensor.h_ray_num * sensor.v_ray_num;
-                    sensor.pc_msg_template.header.frame_id = sensor_name;
+                    sensor.pc_msg_template.header.frame_id = sensor.frame_id;
                     sensor.pc_msg_template.height = 1;
                     sensor.pc_msg_template.point_step = 12;
                     sensor.pc_msg_template.is_dense = false;
@@ -237,10 +275,11 @@ public:
                     }
                 }
                 
-                raycaster_sensors_.push_back(std::move(sensor));
+                RCLCPP_INFO(node_->get_logger(), "RayCaster sensor: %s (topic: %s, frame: %s, %dx%d rays)",
+                    sensor_name, topic_name.c_str(), sensor.frame_id.c_str(), 
+                    sensor.h_ray_num, sensor.v_ray_num);
                 
-                RCLCPP_INFO(node_->get_logger(), "RayCaster sensor: %s (topic: %s, %dx%d rays)",
-                    sensor_name, topic_name.c_str(), sensor.h_ray_num, sensor.v_ray_num);
+                raycaster_sensors_.push_back(std::move(sensor));
             }
         }
         
@@ -309,6 +348,7 @@ private:
         int pos_w_data_offset;
         int pos_w_data_size;
         std::string frame_id;
+        std::string attached_obj_name;  // Name of camera/site object this sensor is attached to
         SensorDataType data_type;  // Type of sensor data
         
         // Per-sensor configuration
@@ -318,6 +358,7 @@ private:
         float offset;              // Offset to apply to distances
         std::string replace_nan;  // "zero", "max", or ""
         float max_distance;        // Maximum distance from sensor config
+        bool use_euclidean_distance;  // For pos_b/pos_w: true=euclidean distance, false=z coordinate
         
         // Publishers for different formats
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pc_publisher;
@@ -352,6 +393,7 @@ private:
     
     // Private methods
     void find_camera_sensors(mjModel* m) {
+        // First pass: find sensors with _pos and _quat suffixes
         for (int i = 0; i < m->nsensor; i++) {
             const char* sensor_name = mj_id2name(m, mjOBJ_SENSOR, i);
             if (!sensor_name) continue;
@@ -395,7 +437,66 @@ private:
             }
         }
         
-        RCLCPP_INFO(node_->get_logger(), "Found %zu camera sensor(s) for TF", camera_sensors_.size());
+        // Second pass: add raycaster sensors that need TF (those using pos_b frame)
+        for (const auto& raycaster : raycaster_sensors_) {
+            // If raycaster uses its own frame (pos_b), add it to camera_sensors for TF publishing
+            if (raycaster.frame_id != "world" && 
+                camera_sensors_.find(raycaster.name) == camera_sensors_.end()) {
+                
+                // Try multiple naming patterns to find corresponding pos/quat sensors
+                std::vector<std::string> name_candidates;
+                
+                // Pattern 1: sensor_name + "_pos"/"_quat"
+                name_candidates.push_back(raycaster.name);
+                
+                // Pattern 2: attached_obj_name + "_pos"/"_quat" (e.g., "ray_caster_camera")
+                if (!raycaster.attached_obj_name.empty()) {
+                    name_candidates.push_back(raycaster.attached_obj_name);
+                }
+                
+                int pos_id = -1;
+                int quat_id = -1;
+                std::string matched_name;
+                
+                for (const auto& base_name : name_candidates) {
+                    std::string pos_sensor_name = base_name + "_pos";
+                    std::string quat_sensor_name = base_name + "_quat";
+                    
+                    pos_id = mj_name2id(m, mjOBJ_SENSOR, pos_sensor_name.c_str());
+                    quat_id = mj_name2id(m, mjOBJ_SENSOR, quat_sensor_name.c_str());
+                    
+                    if (pos_id >= 0 && quat_id >= 0) {
+                        matched_name = base_name;
+                        break;
+                    }
+                }
+                
+                if (pos_id >= 0 && quat_id >= 0) {
+                    CameraSensor cam_sensor;
+                    cam_sensor.name = raycaster.name;
+                    cam_sensor.frame_id = raycaster.frame_id;
+                    cam_sensor.pos_sensor_id = pos_id;
+                    cam_sensor.quat_sensor_id = quat_id;
+                    cam_sensor.pos_adr = m->sensor_adr[pos_id];
+                    cam_sensor.quat_adr = m->sensor_adr[quat_id];
+                    
+                    camera_sensors_[raycaster.name] = cam_sensor;
+                    
+                    RCLCPP_INFO(node_->get_logger(), 
+                        "  Added TF for raycaster '%s' using sensors '%s_pos/%s_quat'", 
+                        raycaster.name.c_str(), matched_name.c_str(), matched_name.c_str());
+                } else {
+                    RCLCPP_WARN(node_->get_logger(), 
+                        "  Could not find pos/quat sensors for raycaster '%s' (tried: %s, %s)",
+                        raycaster.name.c_str(), 
+                        raycaster.name.c_str(),
+                        raycaster.attached_obj_name.c_str());
+                }
+            }
+        }
+        
+        RCLCPP_INFO(node_->get_logger(), "Found %zu camera/raycaster sensor(s) for TF", 
+                    camera_sensors_.size());
     }
     
     void publish_raycaster_data(mjData* d) {
@@ -508,30 +609,67 @@ private:
                     }
                 }
             } else {
-                // Only z values: [z0, z1, z2, ...]
+                // Single value per ray
                 msg.data.reserve(num_points);
 
-                if (sensor.zero_mean) {
-                    // Compute mean (after offset)
-                    float z_sum = 0.0f;
-                    int z_count = 0;
-                    for (int i = 0; i < num_points; i++) {
-                        float z = replace_nonfinite(static_cast<float>(data_ptr[i * 3 + 2]) + sensor.offset);
-                        if (std::isfinite(z)) {
-                            z_sum += z;
-                            z_count++;
+                if (sensor.use_euclidean_distance) {
+                    // Calculate euclidean distance: sqrt(x^2 + y^2 + z^2), always >= 0
+                    if (sensor.zero_mean) {
+                        // Compute mean (after offset)
+                        float dist_sum = 0.0f;
+                        int dist_count = 0;
+                        for (int i = 0; i < num_points; i++) {
+                            float x = static_cast<float>(data_ptr[i * 3 + 0]);
+                            float y = static_cast<float>(data_ptr[i * 3 + 1]);
+                            float z = static_cast<float>(data_ptr[i * 3 + 2]);
+                            float dist = replace_nonfinite(std::sqrt(x*x + y*y + z*z) + sensor.offset);
+                            if (std::isfinite(dist)) {
+                                dist_sum += dist;
+                                dist_count++;
+                            }
+                        }
+                        float dist_mean = (dist_count > 0) ? (dist_sum / dist_count) : 0.0f;
+
+                        // Subtract mean
+                        for (int i = 0; i < num_points; i++) {
+                            float x = static_cast<float>(data_ptr[i * 3 + 0]);
+                            float y = static_cast<float>(data_ptr[i * 3 + 1]);
+                            float z = static_cast<float>(data_ptr[i * 3 + 2]);
+                            msg.data.push_back(replace_nonfinite(std::sqrt(x*x + y*y + z*z) + sensor.offset) - dist_mean);
+                        }
+                    } else {
+                        // No mean subtraction, but apply offset
+                        for (int i = 0; i < num_points; i++) {
+                            float x = static_cast<float>(data_ptr[i * 3 + 0]);
+                            float y = static_cast<float>(data_ptr[i * 3 + 1]);
+                            float z = static_cast<float>(data_ptr[i * 3 + 2]);
+                            msg.data.push_back(replace_nonfinite(std::sqrt(x*x + y*y + z*z) + sensor.offset));
                         }
                     }
-                    float z_mean = (z_count > 0) ? (z_sum / z_count) : 0.0f;
-
-                    // Subtract mean
-                    for (int i = 0; i < num_points; i++) {
-                        msg.data.push_back(replace_nonfinite(static_cast<float>(data_ptr[i * 3 + 2]) + sensor.offset) - z_mean);
-                    }
                 } else {
-                    // No mean subtraction, but apply offset
-                    for (int i = 0; i < num_points; i++) {
-                        msg.data.push_back(replace_nonfinite(static_cast<float>(data_ptr[i * 3 + 2]) + sensor.offset));
+                    // Use z coordinate absolute value (always >= 0)
+                    if (sensor.zero_mean) {
+                        // Compute mean (after offset and abs)
+                        float z_sum = 0.0f;
+                        int z_count = 0;
+                        for (int i = 0; i < num_points; i++) {
+                            float z = replace_nonfinite(std::abs(static_cast<float>(data_ptr[i * 3 + 2])) + sensor.offset);
+                            if (std::isfinite(z)) {
+                                z_sum += z;
+                                z_count++;
+                            }
+                        }
+                        float z_mean = (z_count > 0) ? (z_sum / z_count) : 0.0f;
+
+                        // Subtract mean
+                        for (int i = 0; i < num_points; i++) {
+                            msg.data.push_back(replace_nonfinite(std::abs(static_cast<float>(data_ptr[i * 3 + 2])) + sensor.offset) - z_mean);
+                        }
+                    } else {
+                        // No mean subtraction, but apply offset and abs
+                        for (int i = 0; i < num_points; i++) {
+                            msg.data.push_back(replace_nonfinite(std::abs(static_cast<float>(data_ptr[i * 3 + 2])) + sensor.offset));
+                        }
                     }
                 }
             }

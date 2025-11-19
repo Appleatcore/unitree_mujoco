@@ -44,6 +44,7 @@ inline struct SimulationConfig
         float offset = 0.0f;         // Offset to add to all distance values
         std::string replace_nan = "";  // How to replace NaN/Inf: "zero", "max", or "" (no replacement)
         float max_distance = 10.0f;    // Maximum distance for "max" replacement
+        bool use_euclidean_distance = true;  // For pos_b/pos_w: true=sqrt(x²+y²+z²), false=z coordinate
     };
     std::map<std::string, RaycasterSensorConfig> raycaster_sensors;
     
@@ -115,6 +116,9 @@ inline struct SimulationConfig
                     }
                     if (sensor.second["max_distance"]) {
                         sensor_cfg.max_distance = sensor.second["max_distance"].as<float>();
+                    }
+                    if (sensor.second["use_euclidean_distance"]) {
+                        sensor_cfg.use_euclidean_distance = sensor.second["use_euclidean_distance"].as<bool>();
                     }
                     
                     raycaster_sensors[name] = sensor_cfg;
