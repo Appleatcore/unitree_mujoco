@@ -96,7 +96,7 @@
             <geom size="0.075 0.01225 0.0075" pos="0.036 0 -0.225" quat="0.721382 0 0.692537 0" type="box" rgba="0.7 0.7 0.7 1" class="collision"/>
             <geom size="0.025 0.014 0.0175" pos="0.023 0 -0.31" quat="0.540302 0 0.841471 0" type="box" rgba="0.7 0.7 0.7 1" class="collision"/>
             <geom pos="0 8.6986e-05 0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.15 0.15 0.15 1" mesh="FL_foot" friction="0.4 0.005 0.0001"/>
-            <geom size="0.032" pos="0 8.6986e-05 -0.35" quat="0.707388 0.706825 0 0" type="sphere" rgba="0.15 0.15 0.15 1" class="collision" friction="0.4 0.005 0.0001"/>
+            <geom size="0.032" pos="0 8.6986e-05 -0.35" quat="0.707388 0.706825 0 0" type="sphere" rgba="0.15 0.15 0.15 1" class="collision" friction="0.4 0.005 0.0001" solref="0.005 1.0"/>
           </body>
         </body>
       </body>
@@ -120,7 +120,7 @@
             <geom size="0.075 0.01225 0.0075" pos="0.036 0 -0.225" quat="0.721382 0 0.692537 0" type="box" rgba="0.7 0.7 0.7 1" class="collision"/>
             <geom size="0.025 0.014 0.0175" pos="0.023 0 -0.31" quat="0.540302 0 0.841471 0" type="box" rgba="0.7 0.7 0.7 1" class="collision"/>
             <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.15 0.15 0.15 1" mesh="FR_foot" friction="0.4 0.005 0.0001"/>
-            <geom size="0.032" pos="0 8.6986e-05 -0.35" quat="0.707388 0.706825 0 0" type="sphere" rgba="0.15 0.15 0.15 1" class="collision" friction="0.4 0.005 0.0001"/>
+            <geom size="0.032" pos="0 8.6986e-05 -0.35" quat="0.707388 0.706825 0 0" type="sphere" rgba="0.15 0.15 0.15 1" class="collision" friction="0.4 0.005 0.0001" solref="0.005 1.0"/>
           </body>
         </body>
       </body>
@@ -144,7 +144,7 @@
             <geom size="0.075 0.01225 0.0075" pos="0.036 0 -0.225" quat="0.721382 0 0.692537 0" type="box" rgba="0.7 0.7 0.7 1" class="collision"/>
             <geom size="0.025 0.014 0.0175" pos="0.023 0 -0.31" quat="0.540302 0 0.841471 0" type="box" rgba="0.7 0.7 0.7 1" class="collision"/>
             <geom pos="0 8.6986e-05 0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.15 0.15 0.15 1" mesh="RL_foot" friction="0.4 0.005 0.0001"/>
-            <geom size="0.032" pos="0 8.6986e-05 -0.35" quat="0.707388 0.706825 0 0" type="sphere" rgba="0.15 0.15 0.15 1" class="collision" friction="0.4 0.005 0.0001"/>
+            <geom size="0.032" pos="0 8.6986e-05 -0.35" quat="0.707388 0.706825 0 0" type="sphere" rgba="0.15 0.15 0.15 1" class="collision" friction="0.4 0.005 0.0001" solref="0.005 1.0"/>
           </body>
         </body>
       </body>
@@ -168,7 +168,7 @@
             <geom size="0.075 0.01225 0.0075" pos="0.036 0 -0.225" quat="0.721382 0 0.692537 0" type="box" rgba="0.7 0.7 0.7 1" class="collision"/>
             <geom size="0.025 0.014 0.0175" pos="0.023 0 -0.31" quat="0.540302 0 0.841471 0" type="box" rgba="0.7 0.7 0.7 1" class="collision"/>
             <geom pos="0 -8.6984e-05 0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.15 0.15 0.15 1" mesh="RR_foot" friction="0.4 0.005 0.0001"/>
-            <geom size="0.032" pos="0 8.6986e-05 -0.35" quat="0.707388 0.706825 0 0" type="sphere" rgba="0.15 0.15 0.15 1" class="collision" friction="0.4 0.005 0.0001"/>
+            <geom size="0.032" pos="0 8.6986e-05 -0.35" quat="0.707388 0.706825 0 0" type="sphere" rgba="0.15 0.15 0.15 1" class="collision" friction="0.4 0.005 0.0001" solref="0.005 1.0"/>
           </body>
         </body>
       </body>
@@ -240,10 +240,10 @@
     <plugin name="depth_camera" plugin="mujoco.sensor.ray_caster_camera" objtype="camera"
             objname="ray_caster_camera">
       <config key="focal_length" value="0.00965" />
-      <config key="horizontal_aperture" value="0.01426422" />
+      <config key="horizontal_aperture" value="0.01426421959071792" />
       <config key="size" value="64 48" />
       <config key="dis_range" value="0.3 3.0" />
-      <config key="vertical_aperture" value="0.0106981647" />
+      <config key="vertical_aperture" value="0.010698164693038442" />
 
       <config key="compute_time_log" value="0" />
       <config key="n_step_update" value="5" />
@@ -266,7 +266,7 @@
     <plugin name="height_scan" plugin="mujoco.sensor.ray_caster"
             objtype="camera" objname="ray_caster">
       <config key="resolution" value="0.1"/>
-      <config key="size" value="1.6 1.0"/>
+      <config key="size" value="1.6 1.2"/>
       <config key="dis_range" value="0.1 10"/>
       <config key="type" value="yaw"/>
       <config key="sensor_data_types" value="pos_b"/>

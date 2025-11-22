@@ -205,7 +205,7 @@ public:
                 bool zero_mean = param::config.raycaster_zero_mean;
                 float offset = 0.0f;
                 std::string replace_nan = "";
-                bool use_euclidean_distance = true;  // Default to euclidean distance
+                std::string distance_type = "";
                 
                 // Check if sensor has specific configuration
                 auto it = param::config.raycaster_sensors.find(sensor_name);
@@ -217,7 +217,7 @@ public:
                     zero_mean = it->second.zero_mean;
                     offset = it->second.offset;
                     replace_nan = it->second.replace_nan;
-                    use_euclidean_distance = it->second.use_euclidean_distance;
+                    distance_type = it->second.distance_type;
                     // Note: max_distance from param config is ignored, we use MuJoCo's dis_range instead
                 }
                 
@@ -231,7 +231,7 @@ public:
                 sensor.offset = offset;
                 sensor.replace_nan = replace_nan;
                 sensor.max_distance = max_distance;  // From MuJoCo dis_range config
-                sensor.use_euclidean_distance = use_euclidean_distance;
+                sensor.distance_type = distance_type;
                 
                 if (sensor_format == OutputFormat::POINTCLOUD) {
                     sensor.pc_publisher = node_->create_publisher<sensor_msgs::msg::PointCloud2>(
@@ -358,7 +358,7 @@ private:
         float offset;              // Offset to apply to distances
         std::string replace_nan;  // "zero", "max", or ""
         float max_distance;        // Maximum distance from sensor config
-        bool use_euclidean_distance;  // For pos_b/pos_w: true=euclidean distance, false=z coordinate
+        std::string distance_type;
         
         // Publishers for different formats
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pc_publisher;
@@ -612,7 +612,7 @@ private:
                 // Single value per ray
                 msg.data.reserve(num_points);
 
-                if (sensor.use_euclidean_distance) {
+                if (sensor.distance_type == "eu") {
                     // Calculate euclidean distance: sqrt(x^2 + y^2 + z^2), always >= 0
                     if (sensor.zero_mean) {
                         // Compute mean (after offset)
@@ -646,7 +646,7 @@ private:
                             msg.data.push_back(replace_nonfinite(std::sqrt(x*x + y*y + z*z) + sensor.offset));
                         }
                     }
-                } else {
+                } else if (sensor.distance_type == "abs"){
                     // Use z coordinate absolute value (always >= 0)
                     if (sensor.zero_mean) {
                         // Compute mean (after offset and abs)
@@ -669,6 +669,31 @@ private:
                         // No mean subtraction, but apply offset and abs
                         for (int i = 0; i < num_points; i++) {
                             msg.data.push_back(replace_nonfinite(std::abs(static_cast<float>(data_ptr[i * 3 + 2])) + sensor.offset));
+                        }
+                    }
+                } else {
+                    // Default: use z coordinate directly
+                    if (sensor.zero_mean) {
+                        // Compute mean (after offset)
+                        float z_sum = 0.0f;
+                        int z_count = 0;
+                        for (int i = 0; i < num_points; i++) {
+                            float z = replace_nonfinite(static_cast<float>(data_ptr[i * 3 + 2]) + sensor.offset);
+                            if (std::isfinite(z)) {
+                                z_sum += z;
+                                z_count++;
+                            }
+                        }
+                        float z_mean = (z_count > 0) ? (z_sum / z_count) : 0.0f;
+
+                        // Subtract mean
+                        for (int i = 0; i < num_points; i++) {
+                            msg.data.push_back(replace_nonfinite(static_cast<float>(data_ptr[i * 3 + 2]) + sensor.offset) - z_mean);
+                        }
+                    } else {
+                        // No mean subtraction, but apply offset
+                        for (int i = 0; i < num_points; i++) {
+                            msg.data.push_back(replace_nonfinite(static_cast<float>(data_ptr[i * 3 + 2]) + sensor.offset));
                         }
                     }
                 }
