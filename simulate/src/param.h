@@ -28,6 +28,11 @@ inline struct SimulationConfig
 
     bool enable_ray_array = false;
     bool enable_odom = false;
+    bool enable_odom_sub = false;
+    std::string odom_sub_mode = "odom";
+    std::string odom_sub_topic = "/external_odom";
+    std::string odom_sub_tf_source_frame = "odom";
+    std::string odom_sub_tf_target_frame = "base_link";
     bool enable_gridmap = false;
     bool enable_depth_visualizer = false;
     
@@ -74,6 +79,21 @@ inline struct SimulationConfig
             }
             if (cfg["enable_odom"]) {
                 enable_odom = cfg["enable_odom"].as<bool>();
+            }
+            if (cfg["enable_odom_sub"]) {
+                enable_odom_sub = cfg["enable_odom_sub"].as<bool>();
+            }
+            if (cfg["odom_sub_mode"]) {
+                odom_sub_mode = cfg["odom_sub_mode"].as<std::string>();
+            }
+            if (cfg["odom_sub_topic"]) {
+                odom_sub_topic = cfg["odom_sub_topic"].as<std::string>();
+            }
+            if (cfg["odom_sub_tf_source_frame"]) {
+                odom_sub_tf_source_frame = cfg["odom_sub_tf_source_frame"].as<std::string>();
+            }
+            if (cfg["odom_sub_tf_target_frame"]) {
+                odom_sub_tf_target_frame = cfg["odom_sub_tf_target_frame"].as<std::string>();
             }
             if (cfg["enable_gridmap"]) {
                 enable_gridmap = cfg["enable_gridmap"].as<bool>();

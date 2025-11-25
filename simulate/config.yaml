@@ -15,7 +15,15 @@ enable_elastic_band: 0 # Virtual spring band, used for lifting h1
 
 # ROS2 Publishers (optional)
 enable_ray_array: true  # Enable ray array publisher
-enable_odom: true      # Enable odometry publisher
+enable_odom: false      # Enable odometry publisher
+
+# External Odometry Subscriber (optional, for controlling robot base pose)
+enable_odom_sub: false              # Enable external odometry subscriber
+odom_sub_mode: "odom"              # Mode: "odom" (subscribe topic) or "tf" (listen to TF)
+odom_sub_topic: "/external_odom"   # Odometry topic to subscribe (for odom mode)
+odom_sub_tf_source_frame: "world"   # Source frame for TF lookup (for tf mode)
+odom_sub_tf_target_frame: "odom"  # Target frame for TF lookup (for tf mode)
+
 #enable_gridmap: true   # Enable grid map publisher
 
 ## Raycaster output format (default for all sensors)
@@ -42,6 +50,6 @@ raycaster_sensors:
 enable_depth_visualizer: true  # Enable depth camera visualization (default: false)
 
 # Publisher frequency control (Hz)
-publisher_frequency: 50.0        # Frequency for all ROS2 publishers (default: 50Hz)
+publisher_frequency: 30.0        # Frequency for all ROS2 publishers (default: 50Hz)
 depth_visualizer_frequency: 10.0 # Frequency for depth image visualization (default: 10Hz, lower to improve performance)
 depth_visualizer_scale: 4        # Scale factor for depth image display (1-4, default: 2, lower is faster)

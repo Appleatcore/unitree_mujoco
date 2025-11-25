@@ -41,6 +41,7 @@
 #include "raycaster_publisher.h"
 #include "gridmap_publisher.h"
 #include "odom_publisher.h"
+#include "odom_subscriber.h"
 #endif
 
 #include "depth_image_visualizer.h"
@@ -120,6 +121,10 @@ namespace
   std::shared_ptr<OdomPublisher> odom_publisher = nullptr;
   rclcpp::Node::SharedPtr raycaster_node = nullptr;
   rclcpp::Node::SharedPtr odom_node = nullptr;
+  
+  // ROS2 subscribers
+  std::shared_ptr<OdomSubscriber> odom_subscriber = nullptr;
+  rclcpp::Node::SharedPtr odom_sub_node = nullptr;
 #endif
 
   // Depth image visualizer
@@ -561,6 +566,14 @@ namespace
                 stepped = true;
 
 #ifdef ENABLE_ROS2
+                // Apply external odometry control after step if enabled
+                // This overrides the physics simulation for the base
+                if (odom_subscriber && odom_subscriber->isEnabled()) {
+                  odom_subscriber->applyToSimulation(m, d);
+                }
+#endif
+
+#ifdef ENABLE_ROS2
                 // Publish raycaster data after simulation step (with frequency control)
                 double publisher_interval = 1.0 / param::config.publisher_frequency;
                 if (raycaster_node && (d->time - last_publisher_time) >= publisher_interval) {
@@ -579,6 +592,9 @@ namespace
                 }
                 if (odom_node) {
                   rclcpp::spin_some(odom_node);
+                }
+                if (odom_sub_node) {
+                  rclcpp::spin_some(odom_sub_node);
                 }
 #endif
                 // Update depth image visualizer (with frequency control)
@@ -646,6 +662,10 @@ void PhysicsThread(mj::Simulate *sim, const char *filename)
       if (odom_node && odom_publisher) {
         odom_publisher->initialize(m, d);
       }
+      // Initialize odometry subscriber
+      if (odom_sub_node && odom_subscriber) {
+        odom_subscriber->initialize(m, d);
+      }
 #endif
       // Initialize depth image visualizer (only if enabled)
       if (param::config.enable_depth_visualizer) {
@@ -670,7 +690,7 @@ void PhysicsThread(mj::Simulate *sim, const char *filename)
 
 #ifdef ENABLE_ROS2
   // Shutdown ROS2
-  if (raycaster_node || odom_node) {
+  if (raycaster_node || odom_node || odom_sub_node) {
     rclcpp::shutdown();
   }
 #endif
@@ -827,6 +847,33 @@ int main(int argc, char **argv)
     }
   } else {
     std::printf("ROS2 odometry publisher disabled (set enable_odom: true in config.yaml to enable)\n");
+  }
+  
+  // Initialize Odometry subscriber with its own node
+  if (param::config.enable_odom_sub) {
+    odom_sub_node = std::make_shared<rclcpp::Node>("odom_subscriber");
+    odom_subscriber = std::make_shared<OdomSubscriber>(
+      odom_sub_node, 
+      "base",
+      true,  // enabled
+      param::config.odom_sub_mode,
+      param::config.odom_sub_topic,
+      param::config.odom_sub_tf_source_frame,
+      param::config.odom_sub_tf_target_frame
+    );
+    if (odom_subscriber->isEnabled()) {
+      std::printf("ROS2 odometry subscriber initialized\n");
+      std::printf("  Mode: %s\n", param::config.odom_sub_mode.c_str());
+      if (param::config.odom_sub_mode == "odom") {
+        std::printf("  Topic: %s\n", param::config.odom_sub_topic.c_str());
+      } else {
+        std::printf("  TF: %s -> %s\n", 
+                   param::config.odom_sub_tf_source_frame.c_str(),
+                   param::config.odom_sub_tf_target_frame.c_str());
+      }
+    }
+  } else {
+    std::printf("ROS2 odometry subscriber disabled (set enable_odom_sub: true in config.yaml to enable)\n");
   }
 #endif
 
