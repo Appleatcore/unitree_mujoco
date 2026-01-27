@@ -27,6 +27,7 @@ public:
   std::array<mjtNum, 2> dis_range;
   RayCasterType type = RayCasterType::none;
   bool is_detect_parentbody = false;
+  std::string iteration_order = "height_width";  // "height_width" (default) or "width_height"
 };
 
 class RayCaster {
@@ -146,6 +147,7 @@ public:
   bool is_offert = true;
   RayCasterType type = RayCasterType::none;
   int num_thread = 0;
+  bool iteration_order_height_first = true;  // true: height_width (default), false: width_height
 
   int _get_idx(int h, int v);
   // 将ray从相机坐标系转换到世界坐标系

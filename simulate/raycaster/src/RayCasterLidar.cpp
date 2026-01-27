@@ -4,7 +4,8 @@
 RayCasterLidar::RayCasterLidar() {}
 
 RayCasterLidar::RayCasterLidar(RayCasterLidarCfg &cfg) {
-
+  // Parse iteration_order from config
+  iteration_order_height_first = (cfg.iteration_order != "width_height");
   init(cfg.m, cfg.d, cfg.cam_name, cfg.fov_h, cfg.fov_v, cfg.h_ray_num,
        cfg.v_ray_num, cfg.dis_range, cfg.is_detect_self);
 }

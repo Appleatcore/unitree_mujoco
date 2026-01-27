@@ -15,8 +15,8 @@ public:
 
   static void RegisterPlugin();
 
-  static constexpr std::array<const char *, 4> ray_attributes = {
-      "fov_h", "fov_v", "size", "dis_range"};
+  static constexpr std::array<const char *, 5> ray_attributes = {
+      "fov_h", "fov_v", "size", "dis_range", "iteration_order"};
 
 private:
   RayCasterLidarPlugin(const mjModel *m, mjData *d, int instance);

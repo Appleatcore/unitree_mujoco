@@ -14,8 +14,8 @@ public:
   static void RegisterPlugin();
   RayCasterCfg cfg;
 
-  static constexpr std::array<const char *, 4> ray_attributes = {
-      "resolution", "size", "dis_range", "type"};
+  static constexpr std::array<const char *, 5> ray_attributes = {
+      "resolution", "size", "dis_range", "type", "iteration_order"};
 
 private:
   RayCasterPlugin(const mjModel *m, mjData *d, int instance);

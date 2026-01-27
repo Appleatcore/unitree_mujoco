@@ -81,6 +81,16 @@ RayCasterPlugin::RayCasterPlugin(const mjModel *m, mjData *d, int instance) {
     mju_error("RayCasterPlugin: type must be base, yaw or world");
   }
 
+  // Parse iteration_order (optional, default is "height_width")
+  std::string iteration_order = mj_getPluginConfig(m, instance, ray_attributes[4]);
+  if (iteration_order.empty()) {
+    cfg.iteration_order = "height_width";  // default
+  } else if (iteration_order == "height_width" || iteration_order == "width_height") {
+    cfg.iteration_order = iteration_order;
+  } else {
+    mju_error("RayCasterPlugin: iteration_order must be 'height_width' or 'width_height'");
+  }
+
   std::string cam_name =
       std::string(mj_id2name(m, mjOBJ_CAMERA, m->sensor_objid[sensor_id]));
   cfg.cam_name = cam_name;

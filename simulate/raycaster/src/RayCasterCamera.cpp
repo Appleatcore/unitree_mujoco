@@ -4,6 +4,8 @@
 RayCasterCamera::RayCasterCamera() {}
 
 RayCasterCamera::RayCasterCamera(RayCasterCameraCfg &cfg) {
+  // Parse iteration_order from config
+  iteration_order_height_first = (cfg.iteration_order != "width_height");
   init(cfg.m, cfg.d, cfg.cam_name, cfg.focal_length, cfg.horizontal_aperture,
        cfg.h_ray_num, cfg.v_ray_num, cfg.dis_range, cfg.vertical_aperture,
        cfg.is_detect_parentbody);

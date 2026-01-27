@@ -9,6 +9,8 @@
 RayCaster::RayCaster() {}
 
 RayCaster::RayCaster(RayCasterCfg &cfg) {
+  // Parse iteration_order from config
+  iteration_order_height_first = (cfg.iteration_order != "width_height");
   init(cfg.m, cfg.d, cfg.cam_name, cfg.resolution, cfg.size, cfg.dis_range,
        cfg.type, cfg.is_detect_parentbody);
 }
@@ -117,7 +119,13 @@ int RayCaster::get_idx(int v, int h) {
   return idx;
 }
 
-int RayCaster::_get_idx(int v, int h) { return v * h_ray_num + h; }
+int RayCaster::_get_idx(int v, int h) {
+  if (iteration_order_height_first) {
+    return v * h_ray_num + h;  // height first (default): row-major order
+  } else {
+    return h * v_ray_num + v;  // width first: column-major order
+  }
+}
 
 int RayCaster::get_nray(RayCasterCfg &cfg) {
   return (static_cast<int>(std::round(cfg.size[0] / cfg.resolution)) + 1) *

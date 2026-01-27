@@ -15,6 +15,7 @@ public:
   int v_ray_num = 90;
   std::array<mjtNum, 2> dis_range;
   bool is_detect_self = false;
+  std::string iteration_order = "height_width";  // "height_width" (default) or "width_height"
 };
 
 class RayCasterLidar : public RayCaster {
