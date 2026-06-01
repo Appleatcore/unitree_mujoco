@@ -2,8 +2,9 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <std_msgs/msg/float32_multi_array.hpp>
 #include <grid_map_msgs/msg/grid_map.hpp>
-#include <grid_map_ros/grid_map_ros.hpp>
+#include <grid_map_core/grid_map_core.hpp>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -13,6 +14,7 @@
 #include <memory>
 #include <map>
 #include <cmath>
+#include <limits>
 
 class GridMapPublisher {
 public:
@@ -24,11 +26,11 @@ public:
         // Declare parameters
         node_->declare_parameter("gridmap.enabled", true);
         node_->declare_parameter("gridmap.map_frame", "world");
-        node_->declare_parameter("gridmap.resolution", 0.05);
-        node_->declare_parameter("gridmap.min_x", -2.0);
-        node_->declare_parameter("gridmap.max_x", 2.0);
-        node_->declare_parameter("gridmap.min_y", -2.0);
-        node_->declare_parameter("gridmap.max_y", 2.0);
+        node_->declare_parameter("gridmap.resolution", 0.1);
+        node_->declare_parameter("gridmap.min_x", -4.0);
+        node_->declare_parameter("gridmap.max_x", 4.0);
+        node_->declare_parameter("gridmap.min_y", -4.0);
+        node_->declare_parameter("gridmap.max_y", 4.0);
         node_->declare_parameter("gridmap.min_points_per_cell", 1);
         node_->declare_parameter("gridmap.default_uncertainty", 0.01);
         node_->declare_parameter("gridmap.max_uncertainty", 0.5);
@@ -74,6 +76,44 @@ public:
     bool isEnabled() const { return enabled_; }
 
 private:
+    static std_msgs::msg::Float32MultiArray matrixToMultiArray(const grid_map::Matrix& matrix) {
+        std_msgs::msg::Float32MultiArray msg;
+        msg.layout.dim.resize(2);
+        msg.layout.dim[0].label = "column_index";
+        msg.layout.dim[0].size = matrix.outerSize();
+        msg.layout.dim[0].stride = matrix.size();
+        msg.layout.dim[1].label = "row_index";
+        msg.layout.dim[1].size = matrix.innerSize();
+        msg.layout.dim[1].stride = matrix.innerSize();
+        msg.data.insert(msg.data.begin(), matrix.data(), matrix.data() + matrix.size());
+        return msg;
+    }
+
+    static grid_map_msgs::msg::GridMap toGridMapMessage(const grid_map::GridMap& map) {
+        grid_map_msgs::msg::GridMap msg;
+        msg.header.stamp = rclcpp::Time(map.getTimestamp());
+        msg.header.frame_id = map.getFrameId();
+        msg.info.resolution = map.getResolution();
+        msg.info.length_x = map.getLength().x();
+        msg.info.length_y = map.getLength().y();
+        msg.info.pose.position.x = map.getPosition().x();
+        msg.info.pose.position.y = map.getPosition().y();
+        msg.info.pose.position.z = 0.0;
+        msg.info.pose.orientation.x = 0.0;
+        msg.info.pose.orientation.y = 0.0;
+        msg.info.pose.orientation.z = 0.0;
+        msg.info.pose.orientation.w = 1.0;
+        msg.layers = map.getLayers();
+        msg.basic_layers = map.getBasicLayers();
+        msg.data.reserve(msg.layers.size());
+        for (const auto& layer : msg.layers) {
+            msg.data.push_back(matrixToMultiArray(map.get(layer)));
+        }
+        msg.outer_start_index = static_cast<uint16_t>(map.getStartIndex()(0));
+        msg.inner_start_index = static_cast<uint16_t>(map.getStartIndex()(1));
+        return msg;
+    }
+
     void pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
         if (!enabled_) return;
         
@@ -101,16 +141,33 @@ private:
         
         // Collect heights for each grid cell
         std::map<grid_map::Index, std::vector<float>, IndexCompare> cell_heights;
+        const size_t total_points = cloud->points.size();
+        size_t finite_points = 0;
+        size_t inside_bounds_points = 0;
+        float min_cloud_x = std::numeric_limits<float>::infinity();
+        float max_cloud_x = -std::numeric_limits<float>::infinity();
+        float min_cloud_y = std::numeric_limits<float>::infinity();
+        float max_cloud_y = -std::numeric_limits<float>::infinity();
+        float min_cloud_z = std::numeric_limits<float>::infinity();
+        float max_cloud_z = -std::numeric_limits<float>::infinity();
         
         for (const auto& point : cloud->points) {
             // Skip invalid points
             if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
                 continue;
             }
+            ++finite_points;
+            min_cloud_x = std::min(min_cloud_x, point.x);
+            max_cloud_x = std::max(max_cloud_x, point.x);
+            min_cloud_y = std::min(min_cloud_y, point.y);
+            max_cloud_y = std::max(max_cloud_y, point.y);
+            min_cloud_z = std::min(min_cloud_z, point.z);
+            max_cloud_z = std::max(max_cloud_z, point.z);
             
             grid_map::Position pos(point.x, point.y);
             
             if (!map.isInside(pos)) continue;
+            ++inside_bounds_points;
             
             grid_map::Index index;
             if (!map.getIndex(pos, index)) continue;
@@ -119,8 +176,10 @@ private:
         }
         
         // Calculate elevation and uncertainty for each cell
+        size_t valid_cell_count = 0;
         for (const auto& [index, heights] : cell_heights) {
             if (heights.size() < static_cast<size_t>(min_points_per_cell_)) continue;
+            ++valid_cell_count;
             
             // Calculate mean elevation
             float sum = 0.0f;
@@ -142,9 +201,27 @@ private:
             // Cap uncertainty at max_uncertainty
             map.at("uncertainty", index) = std::min(stddev, static_cast<float>(max_uncertainty_));
         }
+
+        if (finite_points > 0) {
+            RCLCPP_INFO_THROTTLE(
+                node_->get_logger(), *node_->get_clock(), 1000,
+                "GridMap input stats (/height_scan): total=%zu finite=%zu inside_bounds=%zu "
+                "occupied_cells=%zu valid_cells=%zu x[%.3f, %.3f] y[%.3f, %.3f] z[%.3f, %.3f] "
+                "bounds=x[%.3f, %.3f] y[%.3f, %.3f] resolution=%.3f",
+                total_points, finite_points, inside_bounds_points, cell_heights.size(), valid_cell_count,
+                min_cloud_x, max_cloud_x, min_cloud_y, max_cloud_y, min_cloud_z, max_cloud_z,
+                min_x_, max_x_, min_y_, max_y_, resolution_);
+        } else {
+            RCLCPP_INFO_THROTTLE(
+                node_->get_logger(), *node_->get_clock(), 1000,
+                "GridMap input stats (/height_scan): total=%zu finite=0 inside_bounds=0 "
+                "occupied_cells=0 valid_cells=0 x/y/z range unavailable "
+                "bounds=x[%.3f, %.3f] y[%.3f, %.3f] resolution=%.3f",
+                total_points, min_x_, max_x_, min_y_, max_y_, resolution_);
+        }
         
         // Publish GridMap
-        auto gridmap_msg = grid_map::GridMapRosConverter::toMessage(map);
+        auto gridmap_msg = toGridMapMessage(map);
         gridmap_pub_->publish(std::move(gridmap_msg));
     }
     

@@ -61,6 +61,10 @@
     <mesh file="wheel.stl" />
   </asset>
 
+  <extension>
+    <plugin plugin="mujoco.sensor.ray_caster"/>
+  </extension>
+
   <worldbody>
     <body name="base_link" pos="0 0 0.6" childclass="go2">
       <inertial pos="0.021112 0 -0.005366" quat="-0.000543471 0.713435 -0.00173769 0.700719"
@@ -76,6 +80,7 @@
       <geom size="0.05 0.045" pos="0.285 0 0.01" type="cylinder" class="collision" />
       <geom size="0.047" pos="0.293 0 -0.06" class="collision" />
       <site name="imu" pos="-0.02557 0 0.04232" />
+      <camera name="radar" pos="0.28945 0 -0.046825" quat="1 0 0 0" />
       <body name="FL_hip" pos="0.1934 0.0465 0">
         <inertial pos="-0.0054 0.00194 -0.000105" quat="0.497014 0.499245 0.505462 0.498237"
           mass="0.678"
@@ -333,6 +338,19 @@
 
     <framepos name="frame_pos" objtype="site" objname="imu" />
     <framelinvel name="frame_vel" objtype="site" objname="imu" />
+
+    <plugin name="height_scan" plugin="mujoco.sensor.ray_caster" objtype="camera" objname="radar">
+      <config key="resolution" value="0.1"/>
+      <config key="size" value="1.0 1.6"/>
+      <config key="dis_range" value="0.05 5.0"/>
+      <config key="type" value="yaw"/>
+      <config key="sensor_data_types" value="pos_w"/>
+      <config key="geomgroup" value="1 0 0 0 0 0"/>
+      <config key="n_step_update" value="1"/>
+      <config key="num_thread" value="4"/>
+    </plugin>
+    <framepos name="radar_pos" objtype="camera" objname="radar"/>
+    <framequat name="radar_quat" objtype="camera" objname="radar"/>
   </sensor>
 
 </mujoco>

@@ -38,36 +38,42 @@ simulate/
 ### 1. 编译
 
 ```bash
-cd ~/clone/unitree_mujoco/simulate/build
+cd /home/applepie/project_for_test/unitree_mujoco/simulate/build
 
 # 方式1: 不使用ROS2（纯MuJoCo仿真）
 cmake ..
 make -j$(nproc)
 
 # 方式2: 启用ROS2（包含raycaster点云和GridMap发布）
-source /opt/ros/humble/setup.bash  # 根据你的ROS2版本
+source /opt/ros/jazzy/setup.zsh
 cmake -DENABLE_ROS2=ON ..
 make -j$(nproc)
 ```
 
-**ROS2依赖安装**:
+**ROS2基础依赖**:
 ```bash
-sudo apt install ros-humble-rclcpp \
-                 ros-humble-sensor-msgs \
-                 ros-humble-geometry-msgs \
-                 ros-humble-tf2-ros \
-                 ros-humble-grid-map-core \
-                 ros-humble-grid-map-ros \
-                 ros-humble-grid-map-msgs \
-                 ros-humble-grid-map-cv \
-                 ros-humble-pcl-conversions
+sudo apt install ros-jazzy-rclcpp \
+                 ros-jazzy-sensor-msgs \
+                 ros-jazzy-std-msgs \
+                 ros-jazzy-geometry-msgs \
+                 ros-jazzy-tf2-ros \
+                 ros-jazzy-nav-msgs \
+                 ros-jazzy-pcl-conversions
+```
+
+**GridMap相关说明**:
+- `grid_map_core` 和 `grid_map_msgs` 已在仓库内以最小依赖方式提供，默认从 `third_party/grid_map_install` 读取。
+- 运行前如果报 `libgrid_map_msgs__rosidl_generator_c.so` 找不到，补一行：
+```bash
+export LD_LIBRARY_PATH="/home/applepie/project_for_test/unitree_mujoco/third_party/grid_map_install/lib:$LD_LIBRARY_PATH"
 ```
 
 ### 2. 运行
 
 ```bash
-cd ~/clone/unitree_mujoco/simulate/build
-source /opt/ros/humble/setup.bash  # 如果启用了ROS2
+cd /home/applepie/project_for_test/unitree_mujoco/simulate/build
+source /opt/ros/jazzy/setup.zsh
+export LD_LIBRARY_PATH="/home/applepie/project_for_test/unitree_mujoco/third_party/grid_map_install/lib:$LD_LIBRARY_PATH"
 ./unitree_mujoco
 ```
 
@@ -81,7 +87,9 @@ source /opt/ros/humble/setup.bash  # 如果启用了ROS2
 
 **新开终端：**
 ```bash
-source /opt/ros/humble/setup.bash
+source /opt/ros/jazzy/setup.zsh
+source /home/applepie/project_for_test/unitree_mujoco/third_party/grid_map_install/share/grid_map_msgs/local_setup.zsh
+export LD_LIBRARY_PATH=/home/applepie/project_for_test/unitree_mujoco/third_party/grid_map_install/lib:$LD_LIBRARY_PATH
 
 # 列出所有topic
 ros2 topic list
@@ -91,6 +99,7 @@ ros2 topic echo /height_scan
 
 # 查看发布频率
 ros2 topic hz /height_scan
+ros2 topic hz /elevation_map
 
 # 查看TF树
 ros2 run tf2_tools view_frames
@@ -789,31 +798,35 @@ mjData.sensordata[sensor_adr + offset]
 
 #### 不使用ROS2（纯MuJoCo仿真）
 ```bash
-cd ~/clone/unitree_mujoco/simulate/build
+cd /home/applepie/project_for_test/unitree_mujoco/simulate/build
 cmake ..
 make -j$(nproc)
 ```
 
 #### 启用ROS2（包含raycaster + GridMap）
 ```bash
-cd ~/clone/unitree_mujoco/simulate/build
-source /opt/ros/humble/setup.bash
+cd /home/applepie/project_for_test/unitree_mujoco/simulate/build
+source /opt/ros/jazzy/setup.zsh
 cmake -DENABLE_ROS2=ON ..
 make -j$(nproc)
 ```
 
 **依赖安装**:
 ```bash
-sudo apt install ros-humble-rclcpp \
-                 ros-humble-sensor-msgs \
-                 ros-humble-std-msgs \
-                 ros-humble-geometry-msgs \
-                 ros-humble-tf2-ros \
-                 ros-humble-grid-map-core \
-                 ros-humble-grid-map-ros \
-                 ros-humble-grid-map-msgs \
-                 ros-humble-grid-map-cv \
-                 ros-humble-pcl-conversions
+sudo apt install ros-jazzy-rclcpp \
+                 ros-jazzy-sensor-msgs \
+                 ros-jazzy-std-msgs \
+                 ros-jazzy-geometry-msgs \
+                 ros-jazzy-tf2-ros \
+                 ros-jazzy-nav-msgs \
+                 ros-jazzy-pcl-conversions
+```
+
+`grid_map_core` 和 `grid_map_msgs` 默认从仓库内的 `third_party/grid_map_install` 读取；
+运行前如果报本地 `grid_map` 动态库缺失，先执行：
+
+```bash
+export LD_LIBRARY_PATH="/home/applepie/project_for_test/unitree_mujoco/third_party/grid_map_install/lib:$LD_LIBRARY_PATH"
 ```
 
 ### 配置文件
@@ -842,8 +855,9 @@ depth_visualizer_scale: 2        # Scale factor for depth image display (1-4, de
 ### 运行
 
 ```bash
-cd ~/clone/unitree_mujoco/simulate/build
-source /opt/ros/humble/setup.bash
+cd /home/applepie/project_for_test/unitree_mujoco/simulate/build
+source /opt/ros/jazzy/setup.zsh
+export LD_LIBRARY_PATH="/home/applepie/project_for_test/unitree_mujoco/third_party/grid_map_install/lib:$LD_LIBRARY_PATH"
 ./unitree_mujoco
 ```
 
@@ -946,11 +960,11 @@ publisher_frequency: 50.0  # 所有ROS2发布器的统一频率
 #### 编译配置
 
 ```bash
-cd ~/clone/unitree_mujoco/simulate/build
+cd /home/applepie/project_for_test/unitree_mujoco/simulate/build
 rm -rf *  # 清理旧编译
 
 # Source ROS2环境
-source /opt/ros/humble/setup.bash
+source /opt/ros/jazzy/setup.zsh
 
 # 配置并编译
 cmake -DENABLE_ROS2=ON ..
@@ -963,8 +977,9 @@ ldd unitree_mujoco | grep rclcpp
 #### 运行
 
 ```bash
-cd ~/clone/unitree_mujoco/simulate/build
-source /opt/ros/humble/setup.bash
+cd /home/applepie/project_for_test/unitree_mujoco/simulate/build
+source /opt/ros/jazzy/setup.zsh
+export LD_LIBRARY_PATH="/home/applepie/project_for_test/unitree_mujoco/third_party/grid_map_install/lib:$LD_LIBRARY_PATH"
 ./unitree_mujoco
 ```
 
@@ -986,7 +1001,9 @@ source /opt/ros/humble/setup.bash
 **查看数据：**
 ```bash
 # 新终端
-source /opt/ros/humble/setup.bash
+source /opt/ros/jazzy/setup.zsh
+source /home/applepie/project_for_test/unitree_mujoco/third_party/grid_map_install/share/grid_map_msgs/local_setup.zsh
+export LD_LIBRARY_PATH=/home/applepie/project_for_test/unitree_mujoco/third_party/grid_map_install/lib:$LD_LIBRARY_PATH
 
 # 列出topic
 ros2 topic list
@@ -1013,17 +1030,17 @@ evince frames.pdf
 #### 编译
 
 ```bash
-cd ~/clone/unitree_mujoco/simulate/raycaster_ros2
-source /opt/ros/humble/setup.bash
+cd ~/project_for_test/unitree_mujoco/simulate/raycaster_ros2
+source /opt/ros/jazzy/setup.zsh
 ./build.sh
 ```
 
 #### 运行
 
 ```bash
-cd ~/clone/unitree_mujoco/simulate/raycaster_ros2
+cd ~/project_for_test/unitree_mujoco/simulate/raycaster_ros2
 source ros2_ws/install/setup.bash
-export LD_LIBRARY_PATH="~/clone/unitree_mujoco/simulate/mujoco/lib:$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH="/home/applepie/project_for_test/unitree_mujoco/simulate/mujoco/lib:$LD_LIBRARY_PATH"
 
 # 使用测试模型
 ./run_simple.sh
@@ -1046,19 +1063,44 @@ ros2 run raycaster_ros2 raycaster_ros2_node --ros-args \
 ### RViz2可视化
 
 ```bash
+source /opt/ros/jazzy/setup.zsh
+source /home/applepie/project_for_test/unitree_mujoco/third_party/grid_map_install/share/grid_map_msgs/local_setup.zsh
+source /home/applepie/project_for_test/unitree_mujoco/third_party/grid_map_install/share/grid_map_core/local_setup.zsh
+source /home/applepie/project_for_test/unitree_mujoco/third_party/grid_map_install/share/grid_map_rviz_plugin/local_setup.zsh
+export LD_LIBRARY_PATH=/home/applepie/project_for_test/unitree_mujoco/third_party/grid_map_install/lib:$LD_LIBRARY_PATH
 rviz2
 ```
 
 **配置步骤：**
 1. **Fixed Frame**: 设置为 `world`
-2. **Add** → **PointCloud2**
-   - Topic: `/raycaster/<sensor_name>`
+2. **Add** → **PointCloud2** 查看原始雷达点云
+   - Topic: `/height_scan`
    - Size (m): `0.01` (调整点大小)
    - Style: `Points` 或 `Squares`
-3. **Add** → **TF** (可选)
+3. **Add** → **grid_map_rviz_plugin/GridMap** 查看高程地图
+   - Topic: `/elevation_map`
+   - Height Transformer: `Layer`
+   - Height Layer: `elevation`
+   - Color Transformer: `IntensityLayer`
+   - Color Layer: `elevation`
+   - 当前本地插件支持稀疏 GridMap：每个有效 `elevation` cell 会独立显示为小方块
+4. **Add** → **TF** (可选)
    - 显示所有坐标系
-4. **Add** → **Axes** (可选)
+5. **Add** → **Axes** (可选)
    - Reference Frame: 传感器坐标系
+
+修改或重新编译 `grid_map_rviz_plugin` 后，需要完全关闭旧的 RViz2 进程并重新启动，否则 RViz 会继续使用旧的插件动态库。
+
+如果 RViz 的 Add 列表里没有 `grid_map_rviz_plugin/GridMap`，需要先确认本地插件环境已加载：
+
+```bash
+source /opt/ros/jazzy/setup.zsh
+source /home/applepie/project_for_test/unitree_mujoco/third_party/grid_map_install/share/grid_map_msgs/local_setup.zsh
+source /home/applepie/project_for_test/unitree_mujoco/third_party/grid_map_install/share/grid_map_core/local_setup.zsh
+source /home/applepie/project_for_test/unitree_mujoco/third_party/grid_map_install/share/grid_map_rviz_plugin/local_setup.zsh
+export LD_LIBRARY_PATH=/home/applepie/project_for_test/unitree_mujoco/third_party/grid_map_install/lib:$LD_LIBRARY_PATH
+ros2 pkg prefix grid_map_rviz_plugin
+```
 
 ## 进阶配置
 
@@ -1390,7 +1432,7 @@ RayCaster [my_sensor] compute time: 12.5 ms
 **检查步骤：**
 ```bash
 # 1. 确认编译时启用了ROS2
-cd ~/clone/unitree_mujoco/simulate/build
+cd ~/project_for_test/unitree_mujoco/simulate/build
 grep "ENABLE_ROS2" CMakeCache.txt
 # 应该输出: ENABLE_ROS2:BOOL=ON
 
@@ -1399,6 +1441,9 @@ ldd unitree_mujoco | grep rclcpp
 
 # 3. 确认source了ROS2环境
 echo $ROS_DISTRO
+
+# 3.1 如果提示 libgrid_map_msgs__rosidl_generator_c.so 找不到
+export LD_LIBRARY_PATH=/home/applepie/project_for_test/unitree_mujoco/third_party/grid_map_install/lib:$LD_LIBRARY_PATH
 
 # 4. 检查模型中是否配置了raycaster
 grep "ray_caster" your_model.xml

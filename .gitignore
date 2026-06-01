@@ -21,3 +21,7 @@ simulate/raycaster_ros2/test_*
 *~
 .*.swp
 .*.swo
+
+# Local third-party dependencies
+third_party/grid_map/
+third_party/grid_map_install/
