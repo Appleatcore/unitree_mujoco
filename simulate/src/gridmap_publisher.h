@@ -28,7 +28,7 @@ public:
         node_->declare_parameter("gridmap.map_frame", "world");
         node_->declare_parameter("gridmap.resolution", 0.1);
         node_->declare_parameter("gridmap.min_x", -4.0);
-        node_->declare_parameter("gridmap.max_x", 4.0);
+        node_->declare_parameter("gridmap.max_x", 8.0);
         node_->declare_parameter("gridmap.min_y", -4.0);
         node_->declare_parameter("gridmap.max_y", 4.0);
         node_->declare_parameter("gridmap.min_points_per_cell", 1);
