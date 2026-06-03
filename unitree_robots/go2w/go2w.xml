@@ -66,7 +66,7 @@
   </extension>
 
   <worldbody>
-    <body name="base_link" pos="0 0 0.6" childclass="go2">
+    <body name="base" pos="0 0 0.45" childclass="go2">
       <inertial pos="0.021112 0 -0.005366" quat="-0.000543471 0.713435 -0.00173769 0.700719"
         mass="6.921"
         diaginertia="0.107027 0.0980771 0.0244531" />
@@ -80,7 +80,7 @@
       <geom size="0.05 0.045" pos="0.285 0 0.01" type="cylinder" class="collision" />
       <geom size="0.047" pos="0.293 0 -0.06" class="collision" />
       <site name="imu" pos="-0.02557 0 0.04232" />
-      <camera name="radar" pos="0.28945 0 -0.046825" quat="1 0 0 0" />
+      <camera name="radar" pos="0 0 0" quat="1 0 0 0" />
       <body name="FL_hip" pos="0.1934 0.0465 0">
         <inertial pos="-0.0054 0.00194 -0.000105" quat="0.497014 0.499245 0.505462 0.498237"
           mass="0.678"
@@ -114,7 +114,7 @@
                 quat="0.661419 0.248219 0.250051 0.662108" mass="0.98"
                 diaginertia="0.003 0.0016 0.0016" />
               <joint name="FL_wheel_joint" pos="0 0 0" axis="0 1 0" />
-              <geom type="mesh" rgba="0.15 0.15 0.15 1" mesh="wheel" pos="0 0.0 0"
+              <geom type="mesh" rgba="0.15 0.15 0.15 1" mesh="wheel" pos="0 0.0 0" class="visual"
                 quat="0.0 1.0 0.0 0.0" />
               <geom pos="0 0.0 0" quat="0.0 1.0 0.0 0.0" type="mesh" mesh="wheel" class="foot" />
             </body>
@@ -156,7 +156,7 @@
                 quat="0.661419 0.248219 0.250051 0.662108" mass="0.98"
                 diaginertia="0.003 0.0016 0.0016" />
               <joint name="FR_wheel_joint" pos="0 0 0" axis="0 1 0" />
-              <geom type="mesh" rgba="0.15 0.15 0.15 1" mesh="wheel" pos="0 -0.0 0" />
+              <geom type="mesh" rgba="0.15 0.15 0.15 1" mesh="wheel" pos="0 -0.0 0" class="visual" />
               <geom pos="0 0.0 0" type="mesh" mesh="wheel" class="foot"/>
             </body>
 
@@ -197,7 +197,7 @@
                 quat="0.661419 0.248219 0.250051 0.662108" mass="0.98"
                 diaginertia="0.003 0.0016 0.0016" />
               <joint name="RL_wheel_joint" pos="0 0 0" axis="0 1 0" />
-              <geom type="mesh" rgba="0.15 0.15 0.15 1" mesh="wheel" pos="0 0.0 0"
+              <geom type="mesh" rgba="0.15 0.15 0.15 1" mesh="wheel" pos="0 0.0 0" class="visual"
                 quat="0.0 1.0 0.0 0.0" />
               <geom pos="0 0.0 0" quat="0.0 1.0 0.0 0.0" type="mesh" mesh="wheel" class="foot"/>
             </body>
@@ -241,7 +241,7 @@
                 quat="0.661419 0.248219 0.250051 0.662108" mass="0.98"
                 diaginertia="0.003 0.0016 0.0016" />
               <joint name="RR_wheel_joint" pos="0 0 0" axis="0 1 0" />
-              <geom type="mesh" rgba="0.15 0.15 0.15 1" mesh="wheel" pos="0 -0.00 0" />
+              <geom type="mesh" rgba="0.15 0.15 0.15 1" mesh="wheel" pos="0 -0.00 0" class="visual" />
               <geom pos="0 0.0 0" type="mesh" mesh="wheel" class="foot"/>
             </body>
 
@@ -268,10 +268,10 @@
     <motor class="hip" name="RL_thigh" joint="RL_thigh_joint" />
     <motor class="knee" name="RL_calf" joint="RL_calf_joint" />
 
-    <motor ctrlrange="-15 15" name="FR_wheel" joint="FR_wheel_joint" />
-    <motor ctrlrange="-15 15" name="FL_wheel" joint="FL_wheel_joint" />
-    <motor ctrlrange="-15 15" name="RR_wheel" joint="RR_wheel_joint" />
-    <motor ctrlrange="-15 15" name="RL_wheel" joint="RL_wheel_joint" />
+    <motor ctrlrange="-23.5 23.5" name="FR_wheel" joint="FR_wheel_joint" />
+    <motor ctrlrange="-23.5 23.5" name="FL_wheel" joint="FL_wheel_joint" />
+    <motor ctrlrange="-23.5 23.5" name="RR_wheel" joint="RR_wheel_joint" />
+    <motor ctrlrange="-23.5 23.5" name="RL_wheel" joint="RL_wheel_joint" />
   </actuator>
 
   <sensor>
@@ -344,6 +344,7 @@
       <config key="size" value="1.0 1.6"/>
       <config key="dis_range" value="0.05 5.0"/>
       <config key="type" value="yaw"/>
+      <config key="draw_hip_point" value="1 0.02 1 0 0 0.5"/>
       <config key="sensor_data_types" value="pos_w"/>
       <config key="geomgroup" value="1 0 0 0 0 0"/>
       <config key="n_step_update" value="1"/>
@@ -352,5 +353,11 @@
     <framepos name="radar_pos" objtype="camera" objname="radar"/>
     <framequat name="radar_quat" objtype="camera" objname="radar"/>
   </sensor>
+
+  <keyframe>
+    <key name="isaaclab_default"
+      qpos="0 0 0.45 1 0 0 0 0 0.8 -1.5 0 0 0.8 -1.5 0 0 0.8 -1.5 0 0 0.8 -1.5 0"
+      qvel="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"/>
+  </keyframe>
 
 </mujoco>
