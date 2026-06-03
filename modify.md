@@ -534,3 +534,189 @@ source /opt/ros/jazzy/setup.zsh
   cmake --build build -j$(nproc)
 ```
 
+## 2026-06-02 MuJoCo 侧当前改动汇总
+
+本节只记录 `unitree_mujoco` 侧改动，不包含 StepIt 策略目录中的配置修改。
+
+### `unitree_robots/go2w/go2w.xml`
+
+Go2W 机身 link 与 IsaacLab 训练配置对齐：
+
+```xml
+<body name="base" pos="0 0 0.45" childclass="go2">
+```
+
+说明：
+
+- 训练侧 `base_link_name = "base"`，因此 MuJoCo body 使用 `base`。
+- base 初始高度从 `0.6` 改为 `0.45`，与 MIRLab/IsaacLab 初始状态对齐。
+
+雷达高度扫描挂载在 base 中心：
+
+```xml
+<camera name="radar" pos="0 0 0" quat="1 0 0 0" />
+```
+
+当前 raycaster 配置：
+
+```xml
+<plugin name="height_scan" plugin="mujoco.sensor.ray_caster" objtype="camera" objname="radar">
+  <config key="resolution" value="0.1"/>
+  <config key="size" value="1.0 1.6"/>
+  <config key="dis_range" value="0.05 5.0"/>
+  <config key="type" value="yaw"/>
+  <config key="draw_hip_point" value="1 0.02 1 0 0 0.5"/>
+  <config key="sensor_data_types" value="pos_w"/>
+  <config key="geomgroup" value="1 0 0 0 0 0"/>
+  <config key="n_step_update" value="1"/>
+  <config key="num_thread" value="4"/>
+</plugin>
+```
+
+说明：
+
+- `resolution=0.1`，`size=1.0 1.6` 会产生 `11 x 17 = 187` 个采样点。
+- `type="yaw"` 让扫描区域跟随机器人 yaw。
+- `geomgroup="1 0 0 0 0 0"` 只检测 group 0。
+- 轮子 visual mesh 增加 `class="visual"`，避免高程射线打到机器人自身视觉几何体。
+
+轮子力矩上限与训练侧 actuator 对齐：
+
+```xml
+<motor ctrlrange="-23.5 23.5" name="FR_wheel" joint="FR_wheel_joint" />
+<motor ctrlrange="-23.5 23.5" name="FL_wheel" joint="FL_wheel_joint" />
+<motor ctrlrange="-23.5 23.5" name="RR_wheel" joint="RR_wheel_joint" />
+<motor ctrlrange="-23.5 23.5" name="RL_wheel" joint="RL_wheel_joint" />
+```
+
+关节 dry friction 从 `0.2` 降低到接近训练配置的 `0.01`：
+
+```xml
+<joint axis="0 1 0" damping="0.1" armature="0.01" frictionloss="0.01" />
+```
+
+新增训练初始姿态 keyframe：
+
+```xml
+<keyframe>
+  <key name="isaaclab_default"
+    qpos="0 0 0.45 1 0 0 0 0 0.8 -1.5 0 0 0.8 -1.5 0 0 0.8 -1.5 0 0 0.8 -1.5 0"
+    qvel="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"/>
+</keyframe>
+```
+
+注意：
+
+- MuJoCo `qpos` 顺序是 XML 树顺序：`FL, FR, RL, RR`，不是 SDK/policy 的 `FR, FL, RR, RL`。
+- keyframe 设置 base z 为 `0.45`，四条腿 thigh 为 `0.8`，calf 为 `-1.5`，hip/wheel 和所有速度为 `0`。
+
+### `simulate/src/main.cc`
+
+新增 reset helper：
+
+```cpp
+void ResetDataToTrainingInitialState(const mjModel *model, mjData *data)
+```
+
+行为：
+
+- 如果模型中存在 `isaaclab_default` keyframe，则使用 `mj_resetDataKeyframe`。
+- 如果不存在该 keyframe，则回退到原始 `mj_resetData`。
+
+已接入的位置：
+
+- 启动加载模型后。
+- GUI/拖拽重新加载模型后。
+- 按 Backspace reset 时。
+
+这样启动和手动 reset 都会回到训练初始姿态。
+
+同时，SDK bridge 的 elastic band 挂载 body 查找逻辑兼容 `base_link` 和 `base`：
+
+```cpp
+body_id = mj_name2id(m, mjOBJ_BODY, "base_link");
+if (body_id < 0) {
+  body_id = mj_name2id(m, mjOBJ_BODY, "base");
+}
+```
+
+### `unitree_robots/go2w/scene.xml`
+
+楼梯地形改为等间距上楼梯、最高平台、连续下楼梯：
+
+```text
+stair_up_01   x=[2.15, 2.45] top_z=0.15
+stair_up_02   x=[2.45, 2.75] top_z=0.30
+stair_up_03   x=[2.75, 3.05] top_z=0.45
+stair_up_04   x=[3.05, 3.35] top_z=0.60
+stair_up_05   x=[3.35, 3.65] top_z=0.75
+stair_up_06   x=[3.65, 4.85] top_z=0.90
+stair_down_01 x=[4.85, 5.15] top_z=0.75
+stair_down_02 x=[5.15, 5.45] top_z=0.60
+stair_down_03 x=[5.45, 5.75] top_z=0.45
+stair_down_04 x=[5.75, 6.05] top_z=0.30
+stair_down_05 x=[6.05, 6.35] top_z=0.15
+```
+
+最高层平台宽度：
+
+```text
+x=[3.65, 4.85], full_x=1.20m, top_z=0.90m
+```
+
+该平台用于给机器狗到达最高台阶后留出站立空间，再进入下楼梯段。
+
+### `simulate/src/gridmap_publisher.h`
+
+GridMap 世界坐标范围扩展到覆盖后半段楼梯：
+
+```cpp
+node_->declare_parameter("gridmap.min_x", -4.0);
+node_->declare_parameter("gridmap.max_x", 8.0);
+```
+
+原因：
+
+- 当前楼梯 x 范围为 `[2.15, 6.35]`。
+- 原始 `gridmap.max_x=4.0` 会导致最高平台后半段和下楼梯段被 `/elevation_map` 过滤。
+- 扩展到 `8.0` 后，楼梯末端还有约 `1.65m` 余量。
+
+### 验证结果
+
+MuJoCo XML 解析验证：
+
+```text
+qpos0_base_z 0.450
+keyframe_base_z 0.450
+FL_thigh_joint 0.800
+FR_thigh_joint 0.800
+RL_thigh_joint 0.800
+RR_thigh_joint 0.800
+FL_calf_joint -1.500
+FR_calf_joint -1.500
+RL_calf_joint -1.500
+RR_calf_joint -1.500
+```
+
+frictionloss 解析验证：
+
+```text
+FR_hip_joint frictionloss= 0.010
+FR_thigh_joint frictionloss= 0.010
+FR_calf_joint frictionloss= 0.010
+FR_wheel_joint frictionloss= 0.010
+```
+
+重新编译验证：
+
+```bash
+cd /home/applepie/project_for_test/unitree_mujoco/simulate/build
+cmake --build .
+```
+
+结果：
+
+```text
+[85%] Built target unitree_mujoco
+[100%] Built target jstest
+```
