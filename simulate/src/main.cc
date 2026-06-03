@@ -355,6 +355,24 @@ namespace
     return mnew;
   }
 
+  void ResetDataToTrainingInitialState(const mjModel *model, mjData *data)
+  {
+    if (!model || !data)
+    {
+      return;
+    }
+
+    const int key_id = mj_name2id(model, mjOBJ_KEY, "isaaclab_default");
+    if (key_id >= 0)
+    {
+      mj_resetDataKeyframe(model, data, key_id);
+    }
+    else
+    {
+      mj_resetData(model, data);
+    }
+  }
+
   // simulate in background thread (while rendering in main thread)
   void PhysicsLoop(mj::Simulate &sim)
   {
@@ -376,9 +394,12 @@ namespace
 
         mjData *dnew = nullptr;
         if (mnew)
+        {
           dnew = mj_makeData(mnew);
+        }
         if (dnew)
         {
+          ResetDataToTrainingInitialState(mnew, dnew);
           sim.Load(mnew, dnew, sim.dropfilename);
 
           mj_deleteData(d);
@@ -420,9 +441,12 @@ namespace
         mjModel *mnew = LoadModel(sim.filename, sim);
         mjData *dnew = nullptr;
         if (mnew)
+        {
           dnew = mj_makeData(mnew);
+        }
         if (dnew)
         {
+          ResetDataToTrainingInitialState(mnew, dnew);
           sim.Load(mnew, dnew, sim.filename);
 
           mj_deleteData(d);
@@ -642,9 +666,12 @@ void PhysicsThread(mj::Simulate *sim, const char *filename)
     sim->LoadMessage(filename);
     m = LoadModel(filename, *sim);
     if (m)
+    {
       d = mj_makeData(m);
+    }
     if (d)
     {
+      ResetDataToTrainingInitialState(m, d);
       sim->Load(m, d, filename);
       mj_forward(m, d);
 
@@ -718,7 +745,12 @@ void *UnitreeSdk2BridgeThread(void *arg)
   if (body_id < 0) {
     body_id = mj_name2id(m, mjOBJ_BODY, "base_link");
   }
-  param::config.band_attached_link = 6 * body_id;
+  if (body_id < 0) {
+    body_id = mj_name2id(m, mjOBJ_BODY, "base");
+  }
+  if (body_id >= 0) {
+    param::config.band_attached_link = 6 * body_id;
+  }
   
   std::unique_ptr<UnitreeSDK2BridgeBase> interface = nullptr;
   if (m->nu > NUM_MOTOR_IDL_GO) {
@@ -759,7 +791,7 @@ void user_key_cb(GLFWwindow* window, int key, int scancode, int act, int mods) {
       }
     }
     if(key==GLFW_KEY_BACKSPACE) {
-      mj_resetData(m, d);
+      ResetDataToTrainingInitialState(m, d);
       mj_forward(m, d);
     }
   }
