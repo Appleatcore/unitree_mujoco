@@ -373,51 +373,6 @@ namespace
     }
   }
 
-  int FindViewerTrackBody(const mjModel *model)
-  {
-    if (!model)
-    {
-      return -1;
-    }
-
-    for (const char *name : {"base", "base_link", "torso_link"})
-    {
-      const int body_id = mj_name2id(model, mjOBJ_BODY, name);
-      if (body_id >= 0)
-      {
-        return body_id;
-      }
-    }
-
-    for (int joint_id = 0; joint_id < model->njnt; ++joint_id)
-    {
-      if (model->jnt_type[joint_id] == mjJNT_FREE)
-      {
-        return model->jnt_bodyid[joint_id];
-      }
-    }
-
-    return model->nbody > 1 ? 1 : -1;
-  }
-
-  void ConfigureViewerTrackingCamera(const mjModel *model, mj::Simulate &sim)
-  {
-    const int body_id = FindViewerTrackBody(model);
-    if (body_id < 0)
-    {
-      return;
-    }
-
-    const std::unique_lock<std::recursive_mutex> lock(sim.mtx);
-    sim.cam.type = mjCAMERA_TRACKING;
-    sim.cam.trackbodyid = body_id;
-    sim.cam.fixedcamid = -1;
-    sim.cam.distance = 3.0;
-    sim.cam.azimuth = 90.0;
-    sim.cam.elevation = -20.0;
-    sim.camera = 1;
-  }
-
   // simulate in background thread (while rendering in main thread)
   void PhysicsLoop(mj::Simulate &sim)
   {
@@ -453,7 +408,6 @@ namespace
           m = mnew;
           d = dnew;
           mj_forward(m, d);
-          ConfigureViewerTrackingCamera(m, sim);
 
           // allocate ctrlnoise
           free(ctrlnoise);
@@ -501,7 +455,6 @@ namespace
           m = mnew;
           d = dnew;
           mj_forward(m, d);
-          ConfigureViewerTrackingCamera(m, sim);
 
           // allocate ctrlnoise
           free(ctrlnoise);
@@ -721,7 +674,6 @@ void PhysicsThread(mj::Simulate *sim, const char *filename)
       ResetDataToTrainingInitialState(m, d);
       sim->Load(m, d, filename);
       mj_forward(m, d);
-      ConfigureViewerTrackingCamera(m, *sim);
 
       // allocate ctrlnoise
       free(ctrlnoise);
